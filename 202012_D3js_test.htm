@@ -10,7 +10,26 @@
 
 	
 	<style>
+			.xAxis path, .xAxis line, .yAxis path, .yAxis line{
+			  fill: none;
+			  stroke: black;
+			  shape-rendering: crispEdges;
+			}
 
+			.xAxis text, .yAxis text {
+			  font-family: sans-serif;
+			  font-size: 20px;
+			}
+
+			.rect {
+			  fill: steelblue;
+			}
+
+			.linePath {
+			  stroke: #ea891f;
+			  stroke-width: 5px;
+			  fill: none;
+			}		
 	</style>
 	
 	
@@ -27,64 +46,77 @@
 	
 	<h3>D3 test</h3>
 <script>
-import { map } from "lodash/fp";
-import * as d3 from "d3";
-const margin = { top: 50, right: 50, bottom: 100, left: 50 };
-const container = {
-  width: window.innerWidth,
-  height: 480
-};
-const chart = {
-  width: container.width - margin.left - margin.right,
-  height: container.height - margin.top - margin.bottom
-};
-const draw = ({ rainfalls }) => {
-  const { width, height } = chart;
-  const xScale = d3
-    .scalePoint()
-    .domain(map("date", rainfalls))
-    .range([0, width]);
-  const yScale = d3
-    .scaleLinear()
-    .domain([0, d3.max(map(({ value }) => +value, rainfalls))])
-    .range([height, 0]);
-  const line = d3
-    .line()
-    .x(({ date }) => xScale(date))
-    .y(({ value }) => yScale(value));
-  const svg = d3
-    .select(".chart")
-    .append("svg")
-    .attr("width", width + margin.left + margin.right)
-    .attr("height", height + margin.top + margin.bottom)
-    .append("g")
-    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-  svg
-    .append("g")
-    .attr("class", "x axis")
-    .attr("transform", "translate(0," + height + ")")
-    .call(d3.axisBottom(xScale))
-    .selectAll("text");
-  svg
-    .append("g")
-    .attr("class", "y axis")
-    .call(d3.axisLeft(yScale));
-  svg
-    .append("path")
-    .datum(rainfalls)
-    .attr("class", "line")
-    .attr("d", line);
-  svg
-    .selectAll(".dot")
-    .data(rainfalls)
-    .enter()
-    .append("circle")
-    .attr("class", "dot")
-    .attr("cx", ({ date }) => xScale(date))
-    .attr("cy", ({ value }) => yScale(value))
-    .attr("r", 5);
-};
-export { draw };
+var rand = d3.random.normal(170, 10)
+
+var dataSet = []
+
+for(var i=0; i<100; i++){
+	dataSet.push(rand())
+}
+
+var width = 640
+var height = 480
+var padding = {top:30, right:30, bottom:30, left:30}
+
+var svg = d3.select("body").append("svg")
+	.attr("width",width)
+  .attr("height",height)
+
+// -- layout --
+var binNum = 8, rangeMin = 130, rangeMax = 210
+
+var histogram = d3.layout.histogram()
+	.range([rangeMin, rangeMax])
+  .bins(binNum)
+  .frequency(true)
+  
+var hisData = histogram(dataSet)
+
+console.log(hisData)
+
+// -- 比例尺 --  
+var xAxisWidth = width - padding.left - padding.right
+var yAxisWidth = height - padding.top - padding.bottom
+var xTicks = hisData.map(function(d){ return d.x })
+
+var xScale = d3.scale.ordinal()
+	.domain(xTicks)
+  .rangeRoundBands([0, xAxisWidth])
+
+var yScale = d3.scale.linear()
+	.domain([d3.min(hisData, function(d){ return d.y }), d3.max(hisData, function(d){ return d.y })])
+  .range([5, yAxisWidth])
+
+// -- 刻度 --  
+var xAScale = d3.scale.linear()
+  .domain([rangeMin, rangeMax])
+  .range([0, xAxisWidth])
+
+var xAxis = d3.svg.axis()
+	.scale(xAScale)
+  .orient("bottom")
+  .ticks((rangeMax - rangeMin) / binNum)
+
+svg.append("g")
+	.attr("class", "xAxis")
+  .attr("transform", "translate(" + padding.left + "," + (height - padding.bottom) + ")")
+  .call(xAxis)
+
+// -- 長條圖 --
+var lineGenerator = d3.svg.line()
+	.x(function(d){ return xScale(d.x) })
+  .y(function(d){ return height - yScale(d.y) })
+  .interpolate("basis")
+  
+var gLine = svg.append("g")
+	.attr("transform", "translate(" + padding.left + "," + ( -padding.bottom ) + ")")
+  //.style("opacity", 0.0)
+
+gLine.append("path")
+	.attr("class", "linePath")
+  .attr("d", lineGenerator(hisData))
+
+
   
 
   
