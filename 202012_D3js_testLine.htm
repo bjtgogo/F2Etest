@@ -44,10 +44,9 @@
 <body>
 	
 	
-	<h3>D3 Histogram長條圖</h3>
+	<h3>D3 Line線圖</h3>
 <script>
-
-	var rand = d3.random.normal(170, 10)
+var rand = d3.random.normal(170, 10)
 
 var dataSet = []
 
@@ -55,8 +54,8 @@ for(var i=0; i<100; i++){
 	dataSet.push(rand())
 }
 
-var width = 500
-var height = 380
+var width = 640
+var height = 480
 var padding = {top:30, right:30, bottom:30, left:30}
 
 var svg = d3.select("body").append("svg")
@@ -77,52 +76,49 @@ console.log(hisData)
 
 // -- 比例尺 --  
 var xAxisWidth = width - padding.left - padding.right
-var yAxisWidth = 450
+var yAxisWidth = height - padding.top - padding.bottom
 var xTicks = hisData.map(function(d){ return d.x })
 
 var xScale = d3.scale.ordinal()
 	.domain(xTicks)
-  .rangeRoundBands([0, xAxisWidth],0.1,0.3)
+  .rangeRoundBands([0, xAxisWidth])
 
 var yScale = d3.scale.linear()
 	.domain([d3.min(hisData, function(d){ return d.y }), d3.max(hisData, function(d){ return d.y })])
   .range([5, yAxisWidth])
 
 // -- 刻度 --  
+var xAScale = d3.scale.linear()
+  .domain([rangeMin, rangeMax])
+  .range([0, xAxisWidth])
 
 var xAxis = d3.svg.axis()
-	.scale(xScale)
+	.scale(xAScale)
   .orient("bottom")
+  .ticks((rangeMax - rangeMin) / binNum)
 
 svg.append("g")
 	.attr("class", "xAxis")
   .attr("transform", "translate(" + padding.left + "," + (height - padding.bottom) + ")")
   .call(xAxis)
+
+// -- 長條圖 --
+var lineGenerator = d3.svg.line()
+	.x(function(d){ return xScale(d.x) })
+  .y(function(d){ return height - yScale(d.y) })
+  .interpolate("basis")
   
-// -- 直方圖 --  
-var gRect = svg.append("g")
-	.attr("transform", "translate(" + padding.left + "," + (-padding.bottom) + ")")
-  
-gRect.selectAll("rect")
-	.data(hisData)
-  .enter()
-  .append("rect")
-  .attr("class", "rect")
-  .attr("x", function(d,i){
-  	return xScale(d.x)
-  })
-  .attr("y", function(d,i){
-  	return height - yScale(d.y)
-  })
-  .attr("width", function(d,i){
-  	return xScale.rangeBand()
-  })
-  .attr("height", function(d){
-  	return yScale(d.y)
-  })
-  
+var gLine = svg.append("g")
+	.attr("transform", "translate(" + padding.left + "," + ( -padding.bottom ) + ")")
+  //.style("opacity", 0.0)
+
+gLine.append("path")
+	.attr("class", "linePath")
+  .attr("d", lineGenerator(hisData))
+
 
   
+
   
   
   
